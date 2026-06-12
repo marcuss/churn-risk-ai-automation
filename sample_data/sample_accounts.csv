@@ -1,0 +1,14 @@
+account_id,account_name,mrr,plan_name,subscription_status,failed_payment_count_last_30d,days_since_last_login,open_support_tickets,contract_end_date
+acct_1001,Northwind Logistics,3200,Growth,active,0,4,0,2026-12-01
+acct_1002,Brightwave Media,1500,Starter,active,0,12,1,2027-01-20
+acct_1003,Cobalt Robotics,4800,Enterprise,past_due,2,9,1,2026-10-15
+acct_1004,Sierra Analytics,2600,Growth,active,1,47,2,2026-12-20
+acct_1005,Drayton Foods,3700,Growth,active,1,38,4,2026-11-01
+acct_1006,Meridian Health,5200,Enterprise,active,0,20,7,2026-06-28
+acct_1007,Vertex Payments,6100,Enterprise,past_due,3,85,6,2026-06-19
+acct_1008,Lumen Retail,4500,Growth,canceled,0,16,2,2026-06-22
+acct_1009,Atlas Freight,2900,Growth,expired,1,95,3,2026-05-20
+acct_1010,Pinnacle Cloud,9800,Enterprise,active,0,6,1,2027-03-01
+acct_1011,Quill Software,1900,Starter,active,0,22,3,2026-06-20
+acct_1012,Harbor Logistics,2300,Growth,active,2,10,1,2026-09-15
+acct_1013,Evergreen Tutoring,800,Starter,active,0,3,0,2027-02-15
