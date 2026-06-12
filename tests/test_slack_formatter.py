@@ -56,3 +56,9 @@ def test_accounts_ordered_by_risk_severity_then_mrr():
 
 def test_mrr_is_shown_on_each_line():
     assert "$8.5k" in render_text([_flagged("Acme", 8500, 7, "summary")])
+
+
+def test_risk_tier_emoji_reflects_score():
+    assert "🔴" in render_text([_flagged("Severe", 5000, 15, "x")])   # high
+    assert "🟠" in render_text([_flagged("Medium", 5000, 9, "x")])    # medium
+    assert "🟡" in render_text([_flagged("Elevated", 5000, 6, "x")])  # elevated

@@ -13,5 +13,7 @@ Requirements:
 - Focus only on churn-risk drivers; do not comment on account size, value, or priority
 - When an account has signaled non-renewal (canceled), treat it as a time-sensitive save opportunity, not a lost account
 - Avoid speculation beyond available evidence
+- Refer to the account generically (e.g., "the account", "this customer"); never invent or guess a company name
+- Write plain prose only — no headings, titles, or labels
 - Do not use bullet points
 - Do not sound robotic

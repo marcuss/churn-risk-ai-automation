@@ -23,10 +23,7 @@ def _template() -> str:
 
 def build_fallback(assessment: RiskAssessment) -> str:
     signals = assessment.signals or ["elevated churn risk"]
-    return _template().format(
-        account_name=assessment.account.account_name,
-        signal_summary=_humanize(signals),
-    )
+    return _template().format(signal_summary=_humanize(signals))
 
 
 def _humanize(signals: list[str]) -> str:

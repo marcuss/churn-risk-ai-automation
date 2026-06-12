@@ -46,10 +46,8 @@ class _FakeLLM:
         return self._text
 
 
-def test_fallback_is_non_empty_and_names_account():
-    text = build_fallback(_assessment())
-    assert text.strip()
-    assert "Lumen Retail" in text
+def test_fallback_is_non_empty():
+    assert build_fallback(_assessment()).strip()
 
 
 def test_fallback_mentions_detected_signals():
