@@ -195,6 +195,18 @@ See [`docs/adr/0007`](docs/adr/0007-evaluating-llm-output.md).
 - **Observability.** Structured per-account logs (inputs, score, decision, LLM
   status, fallback used) plus an alert on fallback rate; make re-runs idempotent.
 
+Two of these are written up as **proposed** ADRs (the decision is sketched, not
+taken):
+
+- [`docs/adr/0008`](docs/adr/0008-llm-observability-platform.md) — **LLM
+  observability platform** (e.g. self-hosted Langfuse): per-call traces (cost,
+  latency, tokens, drift), eval-score history, and *actionable*, thresholded alerts
+  — the production version of today's single fallback webhook.
+- [`docs/adr/0009`](docs/adr/0009-serverless-aws-deployment.md) — **serverless on
+  AWS** (EventBridge + Step Functions + Lambda): scheduled, with durable per-account
+  retries and no servers to operate — directly serving the brief's *"we shouldn't
+  have to touch it."*
+
 ## Docs
 
 - [`docs/risk_strategy.md`](docs/risk_strategy.md) — scoring, threshold, risk vs. priority
@@ -203,5 +215,5 @@ See [`docs/adr/0007`](docs/adr/0007-evaluating-llm-output.md).
 - [`docs/system_card.md`](docs/system_card.md) — intended use, data handling, failure modes
 - [`docs/sample_output.md`](docs/sample_output.md) — expected briefing format + examples
 - [`evals/rubric.md`](evals/rubric.md) — summary-quality spec (checks + judge rubric)
-- [`docs/adr/`](docs/adr/) — architecture decision records (0001–0007)
+- [`docs/adr/`](docs/adr/) — architecture decision records (0001–0007 accepted; 0008–0009 proposed)
 - [`CLAUDE.md`](CLAUDE.md) — spec-driven rule, conventions & module boundaries
