@@ -20,7 +20,9 @@ fixed golden set:
   ≤ 4 sentences, no bullets/headings, omits the account name, no leaked score,
   `canceled` mentions renewal.
 - **Layer 2 — LLM-as-judge** at **temperature 0**: scores a rubric (synthesis,
-  tone, actionability, faithfulness, canceled-framing) and returns structured JSON.
+  tone, actionability, faithfulness, canceled-framing) and returns structured JSON
+  ([`judge_summary` in `evals/run.py`](../../evals/run.py); prompt:
+  [`prompts/eval_judge_prompt.txt`](../../prompts/eval_judge_prompt.txt)).
 
 `python -m evals.run --check` aggregates and **exits non-zero on regression**. The
 rubric ([`../../evals/rubric.md`](../../evals/rubric.md)) is the source of truth;
