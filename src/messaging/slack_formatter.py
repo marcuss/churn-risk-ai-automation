@@ -23,6 +23,17 @@ def build_payload(assessments: list[RiskAssessment]) -> dict:
     return {"text": render_text(flagged), "blocks": _render_blocks(flagged)}
 
 
+def build_alert(fallbacks: list[RiskAssessment]) -> dict:
+    """Ops alert for the separate alert webhook: makes a silent LLM outage visible
+    by naming the accounts whose summaries fell back to the deterministic path."""
+    names = ", ".join(a.account.account_name for a in fallbacks)
+    text = (
+        f"⚠️ Churn briefing degraded — {len(fallbacks)} summary(ies) fell back to "
+        f"deterministic generation (LLM unavailable): {names}. Check the integration."
+    )
+    return {"text": text}
+
+
 def render_text(flagged: list[RiskAssessment]) -> str:
     if not flagged:
         return f"{HEADER}\n\n{EMPTY_STATE}"

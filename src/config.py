@@ -24,6 +24,7 @@ DEFAULT_MODEL = "claude-sonnet-4-6"
 class Config:
     anthropic_api_key: str | None
     slack_webhook_url: str | None
+    slack_alert_webhook_url: str | None  # separate ops channel for degradation alerts
     model: str = DEFAULT_MODEL
 
     @classmethod
@@ -31,5 +32,6 @@ class Config:
         return cls(
             anthropic_api_key=os.environ.get("ANTHROPIC_API_KEY"),
             slack_webhook_url=os.environ.get("SLACK_WEBHOOK_URL"),
+            slack_alert_webhook_url=os.environ.get("SLACK_ALERT_WEBHOOK_URL"),
             model=os.environ.get("ANTHROPIC_MODEL", DEFAULT_MODEL),
         )

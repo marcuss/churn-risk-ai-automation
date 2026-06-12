@@ -6,7 +6,13 @@ ordering, without brittle whole-string matching.
 
 from datetime import date
 
-from src.messaging.slack_formatter import EMPTY_STATE, HEADER, build_payload, render_text
+from src.messaging.slack_formatter import (
+    EMPTY_STATE,
+    HEADER,
+    build_alert,
+    build_payload,
+    render_text,
+)
 from src.models import Account, RiskAssessment, SubscriptionStatus
 
 
@@ -62,3 +68,9 @@ def test_risk_tier_emoji_reflects_score():
     assert "🔴" in render_text([_flagged("Severe", 5000, 15, "x")])   # high
     assert "🟠" in render_text([_flagged("Medium", 5000, 9, "x")])    # medium
     assert "🟡" in render_text([_flagged("Elevated", 5000, 6, "x")])  # elevated
+
+
+def test_alert_names_the_fallback_accounts():
+    text = build_alert([_flagged("Acme", 3000, 7, "x"), _flagged("Beta", 2000, 6, "y")])["text"]
+    assert "Acme" in text and "Beta" in text
+    assert "2" in text  # count of fallbacks

@@ -53,5 +53,7 @@ LLM's nondeterminism is confined to wording.
 - A Customer Success human reviews every briefing and decides any action.
 - Each run logs inputs, the flag decision, and whether each summary fell back to
   the deterministic path; the per-run **fallback rate** is the key health metric.
+  A fallback also posts an alert to a separate Slack ops webhook
+  (`SLACK_ALERT_WEBHOOK_URL`), so an LLM outage is noticed, not buried.
 - Summary quality is governed by `evals/` (deterministic checks + LLM-as-judge);
   prompt changes must clear the eval gate before merge.

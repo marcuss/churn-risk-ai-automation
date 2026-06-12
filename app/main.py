@@ -49,11 +49,12 @@ def run(
     llm = llm if llm is not None else build_llm(config)
     summarized = [_summarize(llm, a, today) for a in flagged]
 
-    fallbacks = sum(1 for a in summarized if a.used_fallback)
+    fallbacks = [a for a in summarized if a.used_fallback]
     if fallbacks:
         logger.warning(
-            "%d/%d summaries used the deterministic fallback", fallbacks, len(summarized)
+            "%d/%d summaries used the deterministic fallback", len(fallbacks), len(summarized)
         )
+        _alert_on_fallback(config, fallbacks)
 
     payload = slack_formatter.build_payload(summarized)
     if config.slack_webhook_url:
@@ -71,6 +72,18 @@ def _summarize(llm, assessment, today):
             assessment, summary=build_fallback(assessment), used_fallback=True
         )
     return summarize_safely(llm, assessment, today)
+
+
+def _alert_on_fallback(config: Config, fallbacks) -> None:
+    """Post a degradation alert to the ops webhook so fallbacks aren't silent.
+    Best-effort: alerting must never break the briefing itself."""
+    if not config.slack_alert_webhook_url:
+        return
+    try:
+        slack_client.send(config.slack_alert_webhook_url, slack_formatter.build_alert(fallbacks))
+        logger.info("Posted fallback alert to the ops channel")
+    except Exception as exc:  # noqa: BLE001 — alerting failure must not abort the run
+        logger.error("Failed to post fallback alert: %s", exc)
 
 
 def main(argv=None) -> None:
