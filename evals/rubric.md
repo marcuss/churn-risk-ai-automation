@@ -13,12 +13,12 @@ Inputs come from [`golden_set.jsonl`](golden_set.jsonl).
 
 ## Layer 1 — deterministic checks (pass/fail, no model call)
 
-- non-empty and within length bounds (~20–800 chars)
-- ≤ 3 sentences
-- no bullet points / list markers
-- mentions the account name
-- does **not** leak the internal risk score (no "score", no bare risk integer)
-- not a raw metric dump (heuristic: limited runs of digits)
+- non-empty and within length bounds (20–800 chars)
+- ≤ 4 sentences (target is 2–3; this only catches rambling)
+- no bullet points, list markers, or headings
+- **omits the account name** — the model is never given it (see prompt_design.md),
+  so a name in the prose means it hallucinated one; the formatter owns the name
+- does **not** leak the internal risk score (no "score" wording)
 - for `canceled` accounts: mentions renewal / non-renewal / save language
 
 Every Layer-1 check must pass; a failure is a hard fail for that case.
@@ -45,3 +45,20 @@ The judge returns structured JSON (per-dimension score + one-line rationale). Se
 
 The judge runs at temperature 0 for repeatability. A ~10-case set catches
 regressions ("the new prompt now data-dumps"), not fine-grained ranking.
+
+## Harness contract (`evals/run.py`)
+
+Per golden record (reference date **2026-06-11**):
+
+1. Score the account deterministically and sanity-check `is_flagged` against
+   `expected`.
+2. Generate the summary with the **production** `LLMClient` (same prompt path).
+3. Run the Layer-1 checks above.
+4. Judge via [`../prompts/eval_judge_prompt.txt`](../prompts/eval_judge_prompt.txt)
+   at temperature 0 → per-dimension scores.
+
+Output: a per-case report to stdout and `evals/report.md`. Flags: `--check` exits
+non-zero when the suite is below bar (the CI gate); without it, prints the report
+and exits 0. Requires `ANTHROPIC_API_KEY` (generation + judging are real calls),
+so it runs only in `evals.yml`, never the no-network `ci.yml`. The Layer-1 check
+functions are pure and unit-tested without the API.
