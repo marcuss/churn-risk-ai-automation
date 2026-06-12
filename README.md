@@ -46,6 +46,25 @@ python -m app.main --csv sample_data/sample_accounts.csv
 cat sample_data/sample_accounts.csv | python -m app.main
 ```
 
+### HTTP endpoint (optional)
+
+The same pipeline is also exposed over HTTP (see
+[`docs/adr/0006`](docs/adr/0006-http-endpoint.md)):
+
+```bash
+pip install -e ".[api]"
+python -m app.server            # serves on http://127.0.0.1:8000
+
+# POST a CSV, get the formatted briefing back as JSON:
+curl -s --data-binary @sample_data/sample_accounts.csv \
+     -H "Content-Type: text/csv" http://127.0.0.1:8000/churn-risk | jq
+
+# add ?deliver=true to also POST the briefing to the Slack webhook
+```
+
+`POST /churn-risk` returns `{flagged, delivered, message}`; `GET /health` is a
+liveness check.
+
 ## At-risk threshold — how accounts are flagged
 
 Risk is the **sum of deterministic signal points**. An account is flagged when

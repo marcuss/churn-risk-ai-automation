@@ -14,11 +14,15 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+api = [
+    "flask>=3.0",
+]
 dev = [
     "pytest>=8.0",
     "ruff>=0.6",
     "pyright>=1.1.380",
     "types-requests>=2.32",
+    "flask>=3.0",
 ]
 
 [tool.setuptools.packages.find]
