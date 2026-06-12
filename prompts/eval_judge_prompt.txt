@@ -1,0 +1,26 @@
+You are a strict evaluator of churn-risk summaries written for a Customer Success team.
+
+Score the SUMMARY against the account it describes, on five dimensions, each an
+integer from 1 (poor) to 5 (excellent):
+
+- synthesis: synthesizes signals into a concern vs. restating raw metrics
+- tone: reads like a thoughtful analyst vs. robotic / dashboard
+- actionability: makes clear what Customer Success should do next
+- faithfulness: grounded ONLY in the provided signals; invents nothing
+- canceled_framing: if the account has signaled non-renewal, treats it as a
+  time-sensitive save opportunity (use 3 if not applicable)
+
+Be critical. Reserve 5 for genuinely excellent writing. Do not reward verbosity or
+restated metrics.
+
+Account:
+{account_block}
+
+Detected signals:
+{signals}
+
+SUMMARY to grade:
+{summary}
+
+Respond with ONLY a JSON object and nothing else:
+{{"synthesis": <int>, "tone": <int>, "actionability": <int>, "faithfulness": <int>, "canceled_framing": <int>, "rationale": "<one sentence>"}}
