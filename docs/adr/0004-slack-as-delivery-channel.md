@@ -22,8 +22,10 @@ This matches the existing manual process exactly, just automated.
 - **(+)** Incoming webhooks are trivial to set up and POST to.
 - **(+)** Block Kit gives readable, scannable formatting; the text fallback covers
   notifications and non-block clients.
-- **(−)** Webhooks are fire-and-forget: no delivery guarantee, threading, or read
-  receipts.
+- **(−)** Webhooks confirm *acceptance* synchronously (HTTP 2xx + body `ok`, which
+  `slack_client.send` verifies), but return **no message id** — so a specific
+  message can't be fetched, edited, or re-verified later, and there's no threading
+  or read receipts.
 - **(−)** One-way — the briefing can't be interactive (no "acknowledge" buttons).
 - **(−)** The webhook URL is a secret that must be managed (see
   [`../system_card.md`](../system_card.md)).
@@ -31,7 +33,7 @@ This matches the existing manual process exactly, just automated.
 ## Consequences
 
 - `slack_formatter.py` is pure presentation (no risk logic) and orders accounts by
-  priority; `slack_client.py` POSTs the payload.
+  priority; `slack_client.py` POSTs the payload and verifies the `ok` receipt.
 - The webhook URL is read from the environment, never committed.
 - A future iteration could move to a Slack app (interactivity, retries, richer
   delivery signals) without touching the risk or AI layers.
