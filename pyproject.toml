@@ -1,0 +1,28 @@
+[project]
+name = "recurly-churn-risk"
+version = "0.1.0"
+description = "Deterministic churn-risk qualification with LLM-written summaries, delivered to Slack."
+requires-python = ">=3.14"
+dependencies = [
+    "anthropic>=0.40",
+    "requests>=2.32",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
+    "pyright>=1.1.380",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.pyright]
+include = ["src", "app", "tests"]
+pythonVersion = "3.14"

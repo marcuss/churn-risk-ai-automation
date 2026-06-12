@@ -1,0 +1,6 @@
+# Runtime + test dependencies (convenience mirror of pyproject.toml).
+# For the full toolchain incl. lint/type-check: pip install -e ".[dev]"
+anthropic>=0.40
+requests>=2.32
+python-dotenv>=1.0
+pytest>=8.0
