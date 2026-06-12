@@ -5,6 +5,7 @@ signals surface — never the internal point math (CLAUDE.md §5). 'Today' is fi
 so renewal-proximity math is deterministic.
 """
 
+import dataclasses
 from datetime import date
 
 from src.models import Account, SubscriptionStatus
@@ -12,21 +13,21 @@ from src.risk.risk_scoring import assess
 
 TODAY = date(2026, 6, 11)
 
+_BASE = Account(
+    account_id="acct_test",
+    account_name="Test Co",
+    mrr=3000.0,
+    plan_name="Growth",
+    subscription_status=SubscriptionStatus.ACTIVE,
+    failed_payment_count_last_30d=0,
+    days_since_last_login=3,
+    open_support_tickets=0,
+    contract_end_date=date(2026, 12, 1),
+)
+
 
 def make_account(**overrides) -> Account:
-    base = dict(
-        account_id="acct_test",
-        account_name="Test Co",
-        mrr=3000.0,
-        plan_name="Growth",
-        subscription_status=SubscriptionStatus.ACTIVE,
-        failed_payment_count_last_30d=0,
-        days_since_last_login=3,
-        open_support_tickets=0,
-        contract_end_date=date(2026, 12, 1),
-    )
-    base.update(overrides)
-    return Account(**base)
+    return dataclasses.replace(_BASE, **overrides)
 
 
 def test_healthy_account_is_not_flagged():

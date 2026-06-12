@@ -27,7 +27,7 @@ class Config:
     model: str = DEFAULT_MODEL
 
     @classmethod
-    def from_env(cls) -> "Config":
+    def from_env(cls) -> Config:
         return cls(
             anthropic_api_key=os.environ.get("ANTHROPIC_API_KEY"),
             slack_webhook_url=os.environ.get("SLACK_WEBHOOK_URL"),

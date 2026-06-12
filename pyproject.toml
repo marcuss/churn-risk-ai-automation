@@ -18,10 +18,14 @@ dev = [
     "pytest>=8.0",
     "ruff>=0.6",
     "pyright>=1.1.380",
+    "types-requests>=2.32",
 ]
 
 [tool.setuptools.packages.find]
 include = ["src*"]
+
+[tool.ruff]
+line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
@@ -34,3 +38,5 @@ pythonpath = ["."]
 [tool.pyright]
 include = ["src", "app", "tests"]
 pythonVersion = "3.14"
+venvPath = "."
+venv = ".venv"

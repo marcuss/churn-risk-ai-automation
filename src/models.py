@@ -10,10 +10,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import date
-from enum import Enum
+from enum import StrEnum
 
 
-class SubscriptionStatus(str, Enum):
+class SubscriptionStatus(StrEnum):
     """Account lifecycle state, modeled on Recurly's real subscription states.
 
     `CANCELED` = pending non-renewal but still active and paying through
@@ -47,7 +47,7 @@ class Account:
     contract_end_date: date
 
     @classmethod
-    def from_csv_row(cls, row: dict[str, str]) -> "Account":
+    def from_csv_row(cls, row: dict[str, str]) -> Account:
         """Parse one raw CSV row into a typed Account.
 
         Raises ``ValueError``/``KeyError`` on malformed data so the ingestion

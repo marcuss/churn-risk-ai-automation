@@ -5,6 +5,7 @@ at-risk classification* — testing observable behavior, not the internal point
 arithmetic (CLAUDE.md §5).
 """
 
+import dataclasses
 from datetime import date
 
 from src.models import Account, SubscriptionStatus
@@ -12,21 +13,21 @@ from src.risk.risk_scoring import assess
 
 TODAY = date(2026, 6, 11)
 
+_BASE = Account(
+    account_id="acct_test",
+    account_name="Boundary Co",
+    mrr=3000.0,
+    plan_name="Growth",
+    subscription_status=SubscriptionStatus.ACTIVE,
+    failed_payment_count_last_30d=0,
+    days_since_last_login=3,
+    open_support_tickets=0,
+    contract_end_date=date(2026, 12, 1),
+)
+
 
 def _flagged(**overrides) -> bool:
-    base = dict(
-        account_id="acct_test",
-        account_name="Boundary Co",
-        mrr=3000.0,
-        plan_name="Growth",
-        subscription_status=SubscriptionStatus.ACTIVE,
-        failed_payment_count_last_30d=0,
-        days_since_last_login=3,
-        open_support_tickets=0,
-        contract_end_date=date(2026, 12, 1),
-    )
-    base.update(overrides)
-    return assess(Account(**base), TODAY).is_flagged
+    return assess(dataclasses.replace(_BASE, **overrides), TODAY).is_flagged
 
 
 def test_flag_threshold_lower_edge():
