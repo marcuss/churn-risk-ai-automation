@@ -57,9 +57,9 @@ risk-relevant information is included.
 
 ### Included Context
 
-For each flagged account, the model receives:
+For each flagged account, the model receives only risk signals — never the account
+name (the formatter owns that as a heading):
 
-* `account_name` — so it can refer to the account naturally
 * `subscription_status` — in plain language (e.g. *"Past Due (active dunning)"*,
   *"Canceled (set to not renew; still active)"*)
 * `failed_payment_count_last_30d`
@@ -90,6 +90,11 @@ pushes the model toward synthesis over enumeration.
 
 The following information is intentionally excluded:
 
+* **`account_name`** — the model never needs it: the Slack formatter renders the
+  name as a heading above the summary. Withholding it makes restating the name
+  *impossible* (no "Acme Corp is in active dunning…" duplicating the heading) and
+  removes `account_name` as a prompt-injection surface. The model refers to "the
+  account" generically.
 * **`account_id`** — an identifier, not useful for narrative generation.
 * **Internal risk score** — implementation detail; the raw number may bias the
   prose. The model receives interpreted risk *signals* instead.
@@ -132,6 +137,8 @@ Requirements:
 - When an account has signaled non-renewal (canceled), treat it as a time-sensitive
   save opportunity, not a lost account
 - Avoid speculation beyond available evidence
+- Refer to the account generically (e.g., "the account", "this customer"); never invent or guess a company name
+- Write plain prose only — no headings, titles, or labels
 - Do not use bullet points
 - Do not sound robotic
 ```
@@ -163,9 +170,8 @@ standardized inputs for production monitoring.
 ### Example A — billing distress (`past_due`)
 
 ```txt
-Generate a churn-risk assessment for the following account.
+Generate a churn-risk assessment for an at-risk account. Refer to it as "the account".
 
-Account: Cobalt Robotics
 Subscription Status: Past Due (active dunning)
 Failed Payments (last 30d): 2
 Days Since Last Login: 9
@@ -178,18 +184,17 @@ Detected Risk Signals:
 Write a concise 2–3 sentence churn-risk summary for Customer Success.
 ```
 
-> Cobalt Robotics has slipped into active dunning with two failed payment
-> attempts in the past month, a billing-instability pattern that often precedes
-> involuntary churn. Engagement is otherwise healthy and renewal is months away,
-> so the immediate priority is getting the payment method corrected before the
-> failures compound.
+> The account has slipped into active dunning with two failed payment attempts in
+> the past month, a billing-instability pattern that often precedes involuntary
+> churn. Engagement is otherwise healthy and renewal is months away, so the
+> immediate priority is getting the payment method corrected before the failures
+> compound.
 
 ### Example B — signaled non-renewal (`canceled`)
 
 ```txt
-Generate a churn-risk assessment for the following account.
+Generate a churn-risk assessment for an at-risk account. Refer to it as "the account".
 
-Account: Lumen Retail
 Subscription Status: Canceled (set to not renew; still active)
 Failed Payments (last 30d): 0
 Days Since Last Login: 16
@@ -203,10 +208,10 @@ Detected Risk Signals:
 Write a concise 2–3 sentence churn-risk summary for Customer Success.
 ```
 
-> Lumen Retail has signaled it will not renew, and the contract ends in just 11
-> days — but the account is still active, leaving a narrow window to intervene.
-> Engagement has been light rather than absent, so a save is still realistic if
-> Customer Success reaches out this week to understand the cancellation reason.
+> The account has signaled it will not renew, and the contract ends in just 11
+> days — but it is still active, leaving a narrow window to intervene. Engagement
+> has been light rather than absent, so a save is still realistic if Customer
+> Success reaches out this week to understand the cancellation reason.
 
 ---
 
@@ -247,6 +252,22 @@ Two fixes, once the deterministic layer was settled:
 * **Switched renewal from a raw date to a relative window** ("in 11 days"). The
   model has no reliable notion of "today" and produced wrong date math; the risk
   layer now computes the window and passes it in.
+
+### Attempt 5 — Stop sending the account name at all
+
+The formatter already renders the account name as a heading above each summary,
+but the model kept opening with it ("Vertex Payments is showing…"), duplicating
+the heading. Fighting this with prompt rules was a losing battle — a negative rule
+was followed inconsistently, and one phrasing even made the model emit a literal
+`## Vertex Payments` line.
+
+The fix was to remove the problem at the source: **stop sending the name to the
+model entirely.** It was never needed for the *risk narrative* (it's a label the
+formatter owns), so withholding it is consistent with the constrained-context
+principle above. The model now refers to "the account", the duplication is
+*impossible* rather than discouraged, the prompt is simpler (no rule, no example,
+no post-processing guard), and `account_name` is no longer a prompt-injection
+surface. The right move was less prompt engineering, not more.
 
 ---
 

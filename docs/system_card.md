@@ -31,12 +31,14 @@ LLM's nondeterminism is confined to wording.
 
 - **Sensitivity:** the only free-text/PII-ish field is `account_name`. No payment
   card data, personal contact info, or message content is processed.
-- **Sent to the LLM:** account name + interpreted risk signals + coarse metrics.
-  **Not sent:** `account_id`, the raw risk score, `mrr`, `plan_name`.
+- **Sent to the LLM:** interpreted risk signals + coarse metrics only.
+  **Not sent:** the account name, `account_id`, the raw risk score, `mrr`,
+  `plan_name`.
 - **Secrets:** the Anthropic API key and Slack webhook URL are read from the
   environment, never committed (`.env` is git-ignored).
-- **Prompt-injection:** `account_name` flows into the prompt and is sanitized
-  (whitespace collapsed, length-capped) before use.
+- **Prompt-injection:** the model receives only structured risk signals and
+  numbers — no free-text account fields — so there is no `account_name` injection
+  surface in the prompt path.
 
 ## Known failure modes
 

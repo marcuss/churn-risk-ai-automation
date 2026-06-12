@@ -69,6 +69,22 @@ severely-at-risk \$1.9k account above a moderately-at-risk \$5.2k one, while sti
 letting CS see size at a glance. Conflating the two — "big account = high risk" —
 is the failure mode this split exists to prevent.
 
+## Risk tiers (Slack display)
+
+The briefing prefixes each account with a deterministic triage color, mapped
+straight from the score so the tier is always consistent with qualification — the
+LLM never sets it (that would let a probabilistic model convey risk *level*, which
+this whole design forbids):
+
+| Tier | Score | Meaning |
+|---|---|---|
+| 🔴 High | ≥ 12 | multiple strong signals, or signaled non-renewal |
+| 🟠 Medium | 8–11 | a serious signal, or several moderate ones |
+| 🟡 Elevated | 6–7 | just over the flag threshold |
+
+The tiers are a display aid only: they don't change who is flagged (still score
+≥ 6), and like the threshold they're tunable.
+
 ## State space & testing
 
 Five risk-driving fields with 3·3·4·3·3 = **324** combinations, but they collapse

@@ -104,21 +104,25 @@ always completes. See [`docs/adr/0003`](docs/adr/0003-graceful-degradation.md).
 ## Example briefing (Slack)
 
 ```text
-🚨 Weekly Churn Risk — 6 accounts flagged
+🚨 Weekly Churn Risk Report
 
-1. Vertex Payments · $6.1k MRR · risk 20
-   Vertex is in active dunning with repeated payment failures and has gone 85
-   days without a login, all while its renewal lands in under two weeks. The
-   combination points to serious involuntary-churn risk — CS should reach out
-   ahead of the contract date.
+6 account(s) flagged for review.
 
-2. Lumen Retail · $4.5k MRR · risk 14
-   Lumen has signaled non-renewal and its contract ends in 11 days, yet the
-   account is still active and lightly engaged. This is a time-boxed save
-   opportunity; a renewal conversation this week is warranted.
+🔴 *Vertex Payments* · $6.1k MRR
+Three consecutive failed payments have placed this account in active dunning, and
+with renewal eight days out, the billing situation needs immediate attention. The
+account also hasn't logged in for nearly three months, which could be driving both
+the payment hesitation and six unresolved support tickets.
+
+🟡 *Quill Software* · $1.9k MRR
+With renewal just nine days out, three open support tickets and no engagement in
+over three weeks suggest this customer may head into the renewal frustrated —
+unresolved issues at this stage can quickly become justification for non-renewal.
 ```
 
-(Summaries shown are illustrative; the real ones are LLM-generated at run time.)
+The 🔴/🟠/🟡 tier is deterministic (from the risk score); the prose is LLM-generated
+and refers to "the account" — the name is the heading, never restated. Wording
+varies run to run.
 
 ## Testing
 
