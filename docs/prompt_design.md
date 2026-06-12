@@ -36,37 +36,17 @@ quality).
 
 ## System prompt
 
-Anchors role (RevOps analyst), audience (Customer Success), style (concise,
-operational), and the failure modes to avoid (metric-dumping, conflating size with
-risk, treating `canceled` as lost):
-
-```txt
-You are a thoughtful Revenue Operations analyst.
-
-You are preparing churn-risk notes for a Customer Success team.
-
-Write concise, professional summaries that explain why an account may be at risk.
-
-Requirements:
-- Write 2–3 sentences maximum
-- Be concise and readable
-- Sound like a thoughtful analyst, not an automated system
-- Synthesize risk signals rather than repeating raw metrics
-- Mention likely concerns when supported by the data
-- Focus only on churn-risk drivers; do not comment on account size, value, or priority
-- When an account has signaled non-renewal (canceled), treat it as a time-sensitive
-  save opportunity, not a lost account
-- Avoid speculation beyond available evidence
-- Refer to the account generically (e.g., "the account", "this customer"); never invent or guess a company name
-- Write plain prose only — no headings, titles, or labels
-- Do not use bullet points
-- Do not sound robotic
-```
+The versioned source is [`../prompts/system_prompt.txt`](../prompts/system_prompt.txt)
+(code loads it; no copy here to drift). It anchors role (RevOps analyst), audience
+(Customer Success), style (concise, operational), and the failure modes to avoid:
+metric-dumping, conflating size with risk, and treating `canceled` as lost.
 
 ## User prompt
 
-Structured (not conversational) for predictable, monitorable output. Built per
-account — here, a `canceled` save case:
+Built per account from
+[`../prompts/risk_summary_prompt.txt`](../prompts/risk_summary_prompt.txt) —
+structured (not conversational) for predictable, monitorable output. A filled
+`canceled` save case and its output:
 
 ```txt
 Generate a churn-risk assessment for an at-risk account. Refer to it as "the account".
@@ -118,6 +98,6 @@ assumed.
 
 ## Failure handling
 
-LLM calls are retried; on persistent failure or unusable output (empty / overlong),
-the system falls back to a **deterministic summary** from the same signals, so the
-weekly briefing always ships. See [ADR 0003](adr/0003-graceful-degradation.md).
+On unusable output (empty / overlong) the prompt falls back to a **deterministic
+summary** from the same signals — full retry/fallback flow in
+[ADR 0003](adr/0003-graceful-degradation.md).
