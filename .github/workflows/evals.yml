@@ -1,0 +1,27 @@
+name: Eval — LLM output quality
+
+# Separate from CI because evals make real (paid, non-deterministic) model calls.
+# This is the governance gate for prompt changes: a prompt edit must clear the
+# summary-quality bar before merge. Gated to prompt/eval changes + manual runs so
+# it never fires on unrelated commits.
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "prompts/**"
+      - "src/ai/**"
+      - "evals/**"
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - run: pip install -e ".[dev]"
+      - name: Run eval gate
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python -m evals.run --check
