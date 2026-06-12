@@ -1,256 +1,95 @@
 # CLAUDE.md
 
-Repository operating guidelines for AI-assisted development.
-
-This document defines implementation rules, architectural boundaries, and development conventions to maintain consistency and reliability as the system evolves.
+Operating guidelines for AI-assisted development. Rules are ordered by priority.
 
 ---
 
-# Core Principles
+## 0. Spec-driven — highest priority
 
-## 1. Prefer simple, explicit solutions
+**Everything in this repo must trace to a versioned spec. No ad-hoc artifacts.**
 
-This project intentionally favors clarity over abstraction.
+Code, tests, prompts, and generated summaries each implement a spec that lives in
+version control. Before writing code, point to the spec it implements — or write
+that spec first. To change behavior, **change the spec, then the code.**
 
-Prefer:
-
-* small focused modules
-* explicit business logic
-* readable implementations
-* deterministic behavior
-
-Avoid introducing complexity without a clear operational benefit.
-
-Examples of intentionally avoided scope:
-
-* workflow orchestration frameworks
-* multi-agent systems
-* vector databases / RAG
-* unnecessary persistence layers
-* excessive indirection
-
-When in doubt:
-
-> choose the simpler implementation.
-
----
-
-## 2. Deterministic business logic is authoritative
-
-Churn qualification must remain deterministic.
-
-Risk scoring belongs exclusively to:
+Where specs live:
 
 ```text
-src/risk/
+docs/risk_strategy.md        → scoring weights, threshold, risk≠priority
+docs/prompt_design.md        → prompt + context-window decisions
+docs/data_contract.md        → the 9-field CSV input schema
+docs/system_card.md          → intended use, data handling, failure modes
+docs/adr/                    → architecture decision records (context→decision→tradeoffs→consequences)
+prompts/*.txt                → LLM behavior specs (code loads these; never duplicate prompt text)
+prompts/testing/*.md         → test-generation specs
+evals/rubric.md + golden_set.jsonl + prompts/eval_judge_prompt.txt → summary-quality spec
 ```
-
-The LLM is restricted to:
-
-* summary generation
-* natural language synthesis
-
-The LLM must **never determine whether an account is at risk**.
-
-This separation exists to preserve:
-
-* explainability
-* consistency
-* debuggability
-* operational reliability
 
 ---
 
-## 3. Prefer readability over cleverness
+## 1. Deterministic risk is authoritative
 
-Code should optimize for maintainability.
+Churn qualification is deterministic and lives **only** in `src/risk/`. The LLM
+generates prose and **never decides whether an account is at risk**. This
+preserves explainability, consistency, and debuggability.
+See `docs/adr/0001` and `0002`.
 
-Prefer explicit logic:
+## 2. Simple and explicit over clever
 
-```python
-if account.days_since_last_login > 30:
-```
+Prefer small focused modules and explicit business logic. Avoid, unless there's a
+clear operational benefit: orchestration frameworks, multi-agent systems, vector
+DBs / RAG, persistence layers, excessive indirection. When in doubt, choose the
+simpler implementation. Small duplication beats premature abstraction.
 
-Over unnecessary indirection:
+## 3. Fail gracefully
 
-```python
-risk += inactivity_penalty(account)
-```
+One account's failure must not stop the batch: retry transient failures →
+validate output → deterministic fallback → continue. The weekly report always
+completes. Reliability over elegance. See `docs/adr/0003`.
 
-unless abstraction materially improves clarity.
+## 4. Test behavior, not implementation
 
-Small duplication is acceptable if it improves readability.
+Test risk qualification, thresholds, fallback, and Slack formatting — by observable
+outcome, not internal math. Good: `test_past_due_customer_is_flagged`. Avoid:
+`test_adds_two_risk_points`. Tests should survive refactoring.
 
-Avoid premature abstractions.
-
----
-
-## 4. Fail gracefully
-
-The system should degrade gracefully.
-
-Failures affecting one account must not interrupt processing for others.
-
-Expected failure behavior:
-
-1. retry transient failures
-2. fallback to deterministic summary generation
-3. continue batch execution
-4. log failures with context
-
-The weekly report should always complete.
-
-Reliability is preferred over elegance.
-
----
-
-## 5. Test business behavior
-
-Tests should validate behavior, not implementation details.
-
-Focus testing on:
-
-* risk qualification
-* threshold behavior
-* fallback generation
-* Slack formatting
-
-Avoid low-value tests tied to implementation internals.
-
-Good:
-
-```text
-test_past_due_customer_is_flagged
-```
-
-Avoid:
-
-```text
-test_adds_two_risk_points
-```
-
-Tests should remain resilient to refactoring.
-
----
-
-## 6. Maintain git discipline
-
-All meaningful changes should be committed incrementally.
-
-Prefer:
-
-* small commits
-* focused scope
-* descriptive messages
-
-Recommended commit style:
-
-```text
-feat: implement deterministic risk scoring
-test: add threshold behavior coverage
-docs: document prompt iteration
-fix: add llm timeout fallback
-refactor: simplify slack formatter
-```
-
-Avoid mixing unrelated concerns in the same commit.
-
----
-
-## 7. Document architectural decisions
-
-Non-trivial architectural decisions should be documented under:
-
-```text
-docs/adr/
-```
-
-ADRs should include:
-
-* context
-* decision
-* tradeoffs
-* consequences
-
-Document reasoning, not just outcomes.
-
----
-
-## 8. Prompt changes require documentation
-
-Prompt changes should be intentional and traceable.
-
-When modifying prompts:
-
-Update:
-
-```text
-prompt_design.md
-```
-
-Include:
-
-* what changed
-* why it changed
-* expected outcome
-* observed tradeoffs
-
-Avoid undocumented prompt experimentation.
-
----
-
-## 9. Respect module boundaries
-
-Module responsibilities:
+## 5. Respect module boundaries
 
 ```text
 ingestion/  → CSV loading and parsing
-risk/       → deterministic churn qualification
+risk/       → deterministic churn qualification (authoritative)
 ai/         → prompt construction and LLM interaction
 messaging/  → Slack formatting and delivery
 resilience/ → retry and fallback logic
 ```
 
-Avoid business logic leaking into unrelated modules.
+No business logic leaks across boundaries: the Slack formatter doesn't score risk,
+the LLM client doesn't decide thresholds, the CSV loader doesn't transform rules.
 
-Examples:
+## 6. Git discipline
 
-* Slack formatter should not calculate risk
-* LLM client should not decide thresholds
-* CSV loader should not transform business rules
+Small, focused, incrementally-committed changes; one concern per commit.
+Conventional messages: `feat:`, `fix:`, `test:`, `docs:`, `refactor:`, `chore:`,
+`ci:`.
 
----
+## 7. Observability over assumptions
 
-## 10. Prefer observability over assumptions
+Explicit logging, meaningful errors, structured failure handling — no silent
+failures. Error messages carry enough context to debug.
 
-Unexpected behavior should be diagnosable.
+## 8. Operational usefulness first
 
-Prefer:
-
-* explicit logging
-* meaningful errors
-* structured failure handling
-
-Avoid silent failures.
-
-Error messages should include enough context to support debugging.
+The goal is actionable churn reporting: concise summaries, readable output,
+reliable execution — over novelty or unnecessary intelligence. Output should be
+usable by Customer Success without modification.
 
 ---
 
-## 11. Optimize for operational usefulness
+## Change protocol (consequences of Rule 0)
 
-The primary goal of the system is actionable churn reporting.
-
-Favor:
-
-* concise summaries
-* operational readability
-* reliable execution
-
-Over:
-
-* novelty
-* excessive intelligence
-* unnecessary complexity
-
-The system should produce outputs that are immediately usable by downstream teams.
+- Change risk behavior → update `docs/risk_strategy.md` (and an ADR if it's a
+  decision) before the code.
+- Change a prompt → update `docs/prompt_design.md`; edit the `prompts/*.txt` spec,
+  not inline strings.
+- Change summary-quality expectations → update `evals/rubric.md`.
+- Make a non-trivial architectural decision → add an ADR under `docs/adr/`.

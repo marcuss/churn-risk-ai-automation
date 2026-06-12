@@ -21,7 +21,7 @@ Success — automatically, with no manual review.
 - **Flag rule:** score **≥ 6** (table below).
 - **Always delivers:** LLM failures retry, then fall back to a deterministic
   summary; one bad account never breaks the batch.
-- **Run:** `pip install -r requirements.txt` → set 2 env vars → `python app/main.py`.
+- **Run:** `pip install -r requirements.txt` → set 2 env vars → `python -m app.main`.
 
 ## Quick start
 
@@ -40,9 +40,9 @@ ANTHROPIC_MODEL=claude-sonnet-4-6        # optional; this is the default
 Run against the bundled sample (13 accounts):
 
 ```bash
-python app/main.py --csv sample_data/sample_accounts.csv
+python -m app.main --csv sample_data/sample_accounts.csv
 # or pipe a CSV on stdin:
-cat sample_data/sample_accounts.csv | python app/main.py
+cat sample_data/sample_accounts.csv | python -m app.main
 ```
 
 ## At-risk threshold — how accounts are flagged
@@ -130,6 +130,13 @@ Tests assert **business behavior** — flag/no-flag by archetype, threshold
 boundaries, fallback content, Slack formatting — not internal scoring math, so
 they survive refactors. Specs live in [`prompts/testing/`](prompts/testing/).
 
+**Evaluation.** Because risk qualification is deterministic and unit-tested, LLM
+evaluation only has to grade the *prose*, never the risk decision — a system that
+let the model decide risk would force the eval to check correctness too, which is
+far harder and noisier. That split keeps the summary-quality eval small and
+trustworthy: deterministic output checks plus an LLM-as-judge rubric at
+temperature 0, gated separately in CI (`evals.yml`) because judge calls cost money.
+
 ## What I'd change for production
 
 - **Calibrate, don't guess.** Replace hand-picked weights and the threshold with
@@ -148,5 +155,9 @@ they survive refactors. Specs live in [`prompts/testing/`](prompts/testing/).
 
 - [`docs/risk_strategy.md`](docs/risk_strategy.md) — scoring, threshold, risk vs. priority
 - [`docs/prompt_design.md`](docs/prompt_design.md) — prompts, context-window decisions, limitations
-- [`docs/adr/`](docs/adr/) — architecture decision records
-- [`CLAUDE.md`](CLAUDE.md) — repo conventions & module boundaries
+- [`docs/data_contract.md`](docs/data_contract.md) — the 9-field CSV input schema
+- [`docs/system_card.md`](docs/system_card.md) — intended use, data handling, failure modes
+- [`docs/sample_output.md`](docs/sample_output.md) — expected briefing format + examples
+- [`evals/rubric.md`](evals/rubric.md) — summary-quality spec (checks + judge rubric)
+- [`docs/adr/`](docs/adr/) — architecture decision records (0001–0005)
+- [`CLAUDE.md`](CLAUDE.md) — spec-driven rule, conventions & module boundaries
