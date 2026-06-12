@@ -42,6 +42,12 @@ is what keeps this trustworthy.
 - **(+)** Small and cheap: only prose is graded, against ~8 archetype accounts.
 - **(−)** The judge is itself an LLM — non-deterministic and potentially sycophantic;
   mitigated by temperature 0, a concrete rubric, and forced structured output.
+- **(−) Known defect, accepted knowingly:** the judge runs on the **same model**
+  that generates the summaries (`ANTHROPIC_MODEL` drives both). Self-grading
+  invites self-preference bias and is the wrong setup for a production eval — a
+  judge should be a different model (ideally a different provider). It is done this
+  way here only because this assessment runs on a single API key; the first
+  production change is a separate `EVAL_JUDGE_MODEL`.
 - **(−)** A small golden set catches regressions ("now it data-dumps"), not
   fine-grained ranking.
 - **(−)** Costs real API calls → gated to prompt/eval changes + manual dispatch.
