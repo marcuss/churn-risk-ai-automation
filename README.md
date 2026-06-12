@@ -29,11 +29,12 @@ Success — automatically, with no manual review.
 pip install -r requirements.txt          # anthropic, requests, python-dotenv, pytest
 ```
 
-Set two secrets (e.g. in a local `.env`, which is git-ignored):
+Set the secrets (e.g. in a local `.env`, which is git-ignored):
 
 ```env
 ANTHROPIC_API_KEY=sk-ant-...
 SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...
+SLACK_ALERT_WEBHOOK_URL=https://hooks.slack.com/services/...   # optional; ops alerts on fallback
 ANTHROPIC_MODEL=claude-sonnet-4-6        # optional; this is the default
 ```
 
@@ -76,11 +77,15 @@ modeling: [`docs/adr/0005-subscription-status-modeling.md`](docs/adr/0005-subscr
 
 ## Architecture
 
-```text
-CSV ─▶ Risk scoring (deterministic) ─▶ flag (≥6) ─▶ LLM summary ─┐
-        src/risk/                                    src/ai/      ├─▶ Slack briefing
-                                     deterministic fallback if LLM fails        src/messaging/
+```mermaid
+flowchart LR
+    A["CSV (path / stdin)"] --> B["Deterministic risk scoring"]
+    B -->|flagged| C["LLM summary — or deterministic fallback"]
+    C --> D["Slack briefing"]
 ```
+
+Full flow (ingestion, retry/fallback, ops alert):
+[`docs/diagrams/system-flow.md`](docs/diagrams/system-flow.md).
 
 | Module | Responsibility |
 |---|---|
@@ -102,6 +107,10 @@ summary built from the detected signals → continue the batch.** The weekly rep
 always completes. See [`docs/adr/0003`](docs/adr/0003-graceful-degradation.md).
 
 ## Example briefing (Slack)
+
+![Weekly churn risk briefing posted to the Customer Success channel](docs/screenshots/slack-message.png)
+
+Plain-text reference:
 
 ```text
 🚨 Weekly Churn Risk Report
