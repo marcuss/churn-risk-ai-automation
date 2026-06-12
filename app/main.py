@@ -41,10 +41,16 @@ def main(argv=None) -> None:
         description="Weekly churn-risk briefing for Customer Success."
     )
     parser.add_argument("--csv", help="Path to the account CSV (default: read from stdin)")
+    parser.add_argument(
+        "--today",
+        help="Override 'today' (YYYY-MM-DD). Renewal proximity is computed against this; "
+        "use it to get reproducible output from a fixed dataset (the bundled sample is "
+        "calibrated to 2026-06-11).",
+    )
     args = parser.parse_args(argv)
 
     config = Config.from_env()
-    today = date.today()
+    today = date.fromisoformat(args.today) if args.today else date.today()
     accounts = load_accounts_from_path(args.csv) if args.csv else load_accounts(sys.stdin)
     run(accounts, config, today)
 

@@ -40,8 +40,15 @@ def churn_risk():
     except ValueError as exc:  # missing required columns / unreadable CSV
         return jsonify({"error": str(exc)}), 400
 
+    # Optional ?today=YYYY-MM-DD override so a fixed dataset yields reproducible output.
+    today_param = request.args.get("today")
+    try:
+        today = date.fromisoformat(today_param) if today_param else date.today()
+    except ValueError:
+        return jsonify({"error": f"invalid 'today' date: {today_param!r}"}), 400
+
     config = Config.from_env()
-    summarized = summarize_flagged(accounts, config, date.today())
+    summarized = summarize_flagged(accounts, config, today)
     payload = slack_formatter.build_payload(summarized)
 
     delivered = False

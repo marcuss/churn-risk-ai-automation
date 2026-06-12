@@ -41,10 +41,14 @@ ANTHROPIC_MODEL=claude-sonnet-4-6        # optional; this is the default
 Run against the bundled sample (13 accounts):
 
 ```bash
-python -m app.main --csv sample_data/sample_accounts.csv
+python -m app.main --csv sample_data/sample_accounts.csv --today 2026-06-11
 # or pipe a CSV on stdin:
-cat sample_data/sample_accounts.csv | python -m app.main
+cat sample_data/sample_accounts.csv | python -m app.main --today 2026-06-11
 ```
+
+> `--today` pins the date renewal proximity is computed against. The sample data is
+> calibrated to **2026-06-11**; without the flag (real runs), today's date is used —
+> so the sample's flags/tiers will drift as its contract dates pass.
 
 ### HTTP endpoint (optional)
 
@@ -57,9 +61,10 @@ python -m app.server            # serves on http://127.0.0.1:8000
 
 # POST a CSV, get the formatted briefing back as JSON:
 curl -s --data-binary @sample_data/sample_accounts.csv \
-     -H "Content-Type: text/csv" http://127.0.0.1:8000/churn-risk | jq
+     -H "Content-Type: text/csv" "http://127.0.0.1:8000/churn-risk?today=2026-06-11" | jq
 
-# add ?deliver=true to also POST the briefing to the Slack webhook
+# add &deliver=true to also POST the briefing to the Slack webhook;
+# omit ?today= in real runs (defaults to the current date)
 ```
 
 `POST /churn-risk` returns `{flagged, delivered, message}`; `GET /health` is a
