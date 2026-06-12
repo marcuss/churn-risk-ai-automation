@@ -1,124 +1,44 @@
 # Prompt Design
 
-## Objective
+How the LLM layer turns risk signals into analyst-style summaries. The model
+**never decides risk** — qualification is deterministic (see
+[`risk_strategy.md`](risk_strategy.md) and ADRs [0001](adr/0001-deterministic-risk-scoring.md)/[0002](adr/0002-llm-only-for-summarization.md)).
+The LLM (Claude, configurable via `ANTHROPIC_MODEL`) only writes the 2–3 sentence
+prose: concise, readable in Slack, usable by Customer Success without edits, and
+**synthesizing** signals rather than restating metrics.
 
-The objective of the prompting layer is to generate concise, analyst-style churn
-risk summaries for Customer Success teams.
+## Context window — what goes in, and why
 
-The model is **not responsible for determining whether an account is at risk**.
-Risk qualification is handled deterministically upstream using explicit business
-heuristics — see [`risk_strategy.md`](risk_strategy.md) for the scoring model and
-threshold. The LLM (Claude; configurable via `ANTHROPIC_MODEL`) is used only to
-transform structured account signals into human-readable summaries that resemble
-what a thoughtful RevOps analyst would write.
+Deliberately constrained to account-local, risk-relevant fields — never the whole
+CSV (more context adds noise, cost, and hallucination risk without improving
+quality).
 
-Target output requirements:
+**Sent** (per flagged account):
 
-* 2–3 sentences maximum
-* concise and professional
-* readable in Slack
-* useful to Customer Success without modification
-* avoid simply restating metrics
-* synthesize likely concerns from available signals
+- `subscription_status` in plain language (e.g. *"Past Due (active dunning)"*)
+- `failed_payment_count_last_30d`, `days_since_last_login`, `open_support_tickets`
+- **renewal as a relative window** ("in 11 days") — not the raw date; the model has
+  no reliable notion of "today" and gets date math wrong, so the risk layer computes it
+- the **derived signals** (payment instability, low engagement, support burden,
+  upcoming renewal, pending non-renewal) — these push synthesis over enumeration,
+  while the raw metrics keep the prose specific ("85 days without a login")
 
----
+**Deliberately withheld:**
 
-## Prompting Strategy
+- **`account_name`** — the formatter owns it as a heading; withholding it makes
+  restating the name impossible *and* removes a prompt-injection surface (see
+  Attempt 5). The model refers to "the account".
+- **the internal risk score** — an implementation detail that would bias the prose
+- **`mrr` / `plan_name`** — these are *priority, not risk*; sending them invites
+  "this high-value account…" prose that conflates size with churn likelihood
+- **`account_id`** and **other accounts** — useless for a single-account narrative
+- **`expired` accounts** never reach the LLM at all (filtered upstream as churned)
 
-The system intentionally separates deterministic business logic from generative
-behavior.
+## System prompt
 
-### Responsibilities
-
-**Deterministic Layer**
-
-* determines whether an account is at risk
-* calculates risk score
-* identifies contributing risk signals
-
-**LLM Layer**
-
-* converts structured signals into a concise analyst narrative
-* highlights likely churn concerns
-* communicates findings in natural language
-
-This separation was intentional to improve consistency, explainability, cost
-predictability, and operational reliability. Using an LLM for churn
-classification would introduce nondeterministic behavior into a business-critical
-workflow and make debugging significantly harder.
-
----
-
-## Context Window Decisions
-
-A key design decision was intentionally constraining the context window. Rather
-than sending the entire CSV row or large amounts of account metadata, only
-risk-relevant information is included.
-
-### Included Context
-
-For each flagged account, the model receives only risk signals — never the account
-name (the formatter owns that as a heading):
-
-* `subscription_status` — in plain language (e.g. *"Past Due (active dunning)"*,
-  *"Canceled (set to not renew; still active)"*)
-* `failed_payment_count_last_30d`
-* `days_since_last_login`
-* `open_support_tickets`
-* **renewal expressed relative to today** — e.g. *"in 11 days"* — not the raw
-  `contract_end_date`, because the model should not be doing date arithmetic or
-  guessing the current date
-
-Plus the **derived risk signals** computed by the risk layer:
-
-* payment instability
-* low product engagement
-* elevated support burden
-* upcoming renewal (time-sensitive)
-* pending non-renewal (for `canceled` accounts)
-
-These derived signals help the model synthesize information rather than simply
-repeating raw metrics. Raw metrics are still included so the prose can be
-*specific and accurate* ("85 days without a login"), while the system prompt
-pushes the model toward synthesis over enumeration.
-
-> `expired` accounts never reach the LLM — they are filtered upstream as already
-> churned (see [`risk_strategy.md`](risk_strategy.md)). The prompt layer only ever
-> sees savable accounts.
-
-### Excluded Context
-
-The following information is intentionally excluded:
-
-* **`account_name`** — the model never needs it: the Slack formatter renders the
-  name as a heading above the summary. Withholding it makes restating the name
-  *impossible* (no "Acme Corp is in active dunning…" duplicating the heading) and
-  removes `account_name` as a prompt-injection surface. The model refers to "the
-  account" generically.
-* **`account_id`** — an identifier, not useful for narrative generation.
-* **Internal risk score** — implementation detail; the raw number may bias the
-  prose. The model receives interpreted risk *signals* instead.
-* **`mrr` and `plan_name`** — these are **priority/impact, not risk** (see
-  *Risk ≠ Priority* in [`risk_strategy.md`](risk_strategy.md)). Feeding them to
-  the model invites "this high-value account…" prose that conflates account size
-  with churn likelihood. Business impact is handled by the Slack formatter, which
-  shows MRR on each line and orders the briefing — it does not belong in the
-  risk narrative.
-* **Entire CSV dataset** — the model only needs account-local context. Unrelated
-  accounts add noise and tokens without improving quality.
-
-### Why constrained context?
-
-More context does not necessarily improve output quality. Constrained context
-improves consistency, cost efficiency, prompt reliability, and hallucination
-resistance. The goal is not maximum intelligence, but predictable operational
-output.
-
----
-
-## System Prompt
-
-The system prompt establishes tone, constraints, and audience expectations.
+Anchors role (RevOps analyst), audience (Customer Success), style (concise,
+operational), and the failure modes to avoid (metric-dumping, conflating size with
+risk, treating `canceled` as lost):
 
 ```txt
 You are a thoughtful Revenue Operations analyst.
@@ -143,54 +63,10 @@ Requirements:
 - Do not sound robotic
 ```
 
-### Why this prompt?
+## User prompt
 
-The system prompt anchors four things:
-
-1. **Role** — Revenue Operations analyst
-2. **Audience** — Customer Success
-3. **Communication style** — concise and operational
-4. **Failure prevention** — avoid robotic metric repetition; avoid conflating
-   size with risk; treat `canceled` as savable
-
-Early prompt experiments produced outputs that resembled dashboards rather than
-analyst notes — e.g. *"Customer has 3 failed payments and 42 inactive days."*
-While factually correct, this is not operationally useful. The final prompt
-emphasizes synthesis over restatement.
-
----
-
-## User Prompt
-
-The user prompt contains structured account context, built per account by the
-prompt layer. It is intentionally structured rather than conversational, which
-yields more predictable outputs, easier debugging, lower variance, and
-standardized inputs for production monitoring.
-
-### Example A — billing distress (`past_due`)
-
-```txt
-Generate a churn-risk assessment for an at-risk account. Refer to it as "the account".
-
-Subscription Status: Past Due (active dunning)
-Failed Payments (last 30d): 2
-Days Since Last Login: 9
-Open Support Tickets: 1
-Renewal: in 126 days
-
-Detected Risk Signals:
-- payment instability
-
-Write a concise 2–3 sentence churn-risk summary for Customer Success.
-```
-
-> The account has slipped into active dunning with two failed payment attempts in
-> the past month, a billing-instability pattern that often precedes involuntary
-> churn. Engagement is otherwise healthy and renewal is months away, so the
-> immediate priority is getting the payment method corrected before the failures
-> compound.
-
-### Example B — signaled non-renewal (`canceled`)
+Structured (not conversational) for predictable, monitorable output. Built per
+account — here, a `canceled` save case:
 
 ```txt
 Generate a churn-risk assessment for an at-risk account. Refer to it as "the account".
@@ -213,99 +89,35 @@ Write a concise 2–3 sentence churn-risk summary for Customer Success.
 > has been light rather than absent, so a save is still realistic if Customer
 > Success reaches out this week to understand the cancellation reason.
 
----
+## Iteration — what broke, what changed
 
-## Prompt Iteration
+1. **Minimal prompt** ("summarize this customer") → metric-dumping and robotic:
+   *"Customer has 2 failed payments and 47 inactive days…"*. Reads like a dashboard.
+2. **Analyst framing** ("a thoughtful RevOps analyst") → more concise; began
+   synthesizing instead of enumerating.
+3. **Derived signals** added (payment instability, etc.) → less metric repetition,
+   better pattern-spotting.
+4. **Risk ≠ Priority alignment** → removed `mrr`/`plan_name` (the model was
+   editorializing about account value) and switched renewal to a relative window
+   (the model got date math wrong).
+5. **Stopped sending the account name** → the model kept opening with it,
+   duplicating the heading; a negative rule was followed inconsistently (one phrasing
+   even produced a literal `## Vertex Payments`). Removing the name from context
+   killed the problem at the source — simpler prompt, no post-processing guard, no
+   injection surface. *The right move was less prompt engineering, not more.*
 
-### Attempt 1 — Minimal prompt
+## One thing it gets wrong (even when it works)
 
-```txt
-Generate a churn risk summary for this customer.
-```
+The model only sees the visible signals, never the *why*. A `canceled` flag shows
+*that* a customer is leaving but not the reason CS most needs; a seasonal lull looks
+like risky inactivity; support tickets may reflect active implementation, not
+dissatisfaction. **Production fix:** enrich context with historical churn outcomes,
+CS notes, CRM/renewal-stage data, and support sentiment — and gate prompt changes on
+the eval ([`../evals/rubric.md`](../evals/rubric.md)) so quality is measured, not
+assumed.
 
-**Problem:** the model repeated metrics verbatim, sounded robotic, and lacked
-actionable language — e.g. *"Customer has 2 failed payments and has not logged in
-for 47 days. There are 5 support tickets open. Contract renewal is approaching."*
-Accurate, but reads like a dashboard rather than analyst judgment.
+## Failure handling
 
-### Attempt 2 — Analyst framing
-
-Framed the model explicitly as *"a thoughtful Revenue Operations analyst."*
-Outputs became more concise, readable, and useful; the model began synthesizing
-signals instead of enumerating them.
-
-### Attempt 3 — Risk-signal enrichment
-
-Instead of only passing raw metrics, the prompt added interpreted risk signals
-(payment instability, low engagement, renewal risk, pending non-renewal). This
-reduced metric repetition and improved narrative quality; the model became better
-at identifying patterns across signals.
-
-### Attempt 4 — Aligning the prompt with *Risk ≠ Priority*
-
-Two fixes, once the deterministic layer was settled:
-
-* **Removed `mrr` and `plan_name`** from the context. The model had started
-  editorializing about account value ("this major enterprise account…"), which
-  conflates business impact with churn likelihood. Those belong to the formatter,
-  not the risk narrative.
-* **Switched renewal from a raw date to a relative window** ("in 11 days"). The
-  model has no reliable notion of "today" and produced wrong date math; the risk
-  layer now computes the window and passes it in.
-
-### Attempt 5 — Stop sending the account name at all
-
-The formatter already renders the account name as a heading above each summary,
-but the model kept opening with it ("Vertex Payments is showing…"), duplicating
-the heading. Fighting this with prompt rules was a losing battle — a negative rule
-was followed inconsistently, and one phrasing even made the model emit a literal
-`## Vertex Payments` line.
-
-The fix was to remove the problem at the source: **stop sending the name to the
-model entirely.** It was never needed for the *risk narrative* (it's a label the
-formatter owns), so withholding it is consistent with the constrained-context
-principle above. The model now refers to "the account", the duplication is
-*impossible* rather than discouraged, the prompt is simpler (no rule, no example,
-no post-processing guard), and `account_name` is no longer a prompt-injection
-surface. The right move was less prompt engineering, not more.
-
----
-
-## Known Limitation
-
-Even when working correctly, the prompt can only reason over visible account
-signals. Examples:
-
-* A customer may reduce usage seasonally, making inactivity look risky when it is
-  expected.
-* A high-value account may have open support tickets because of active
-  implementation work rather than dissatisfaction.
-* A `canceled` flag captures *that* the customer signaled non-renewal but never
-  *why* — the most important thing CS actually needs.
-
-The prompt lacks broader business context such as historical churn outcomes, CS
-notes, CRM opportunity data, and product-adoption trends.
-
-### Production improvements
-
-In production I would enrich the context with historical account behavior,
-previous churn outcomes, sentiment from support interactions, CRM metadata, and
-renewal-stage information — and add a prompt evaluation dataset to measure summary
-consistency and quality over time.
-
----
-
-## Failure Handling
-
-LLM calls are probabilistic and occasionally fail or return garbage. To prevent
-workflow disruption, generation is retried; if it still fails (or returns empty /
-implausibly long output), the system falls back to a **deterministic summary**
-built from the same detected signals. Example fallback:
-
-> Elevated churn risk detected due to failed payments, reduced engagement, and
-> multiple open support tickets. Recommend Customer Success review before the
-> upcoming renewal.
-
-This ensures the weekly Slack report is always delivered, even when AI generation
-partially fails. The goal of the automation is reliability first, elegance second.
-See [`adr/0003-graceful-degradation.md`](adr/0003-graceful-degradation.md).
+LLM calls are retried; on persistent failure or unusable output (empty / overlong),
+the system falls back to a **deterministic summary** from the same signals, so the
+weekly briefing always ships. See [ADR 0003](adr/0003-graceful-degradation.md).
