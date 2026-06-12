@@ -36,7 +36,7 @@ addopts = "-q"
 pythonpath = ["."]
 
 [tool.pyright]
-include = ["src", "app", "tests"]
+include = ["src", "app", "tests", "evals"]
 pythonVersion = "3.14"
 venvPath = "."
 venv = ".venv"

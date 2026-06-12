@@ -31,3 +31,4 @@ env/
 *.log
 logs/
 runs/
+evals/report.md
