@@ -125,6 +125,12 @@ validate the output (non-empty, sane length) → fall back to a deterministic
 summary built from the detected signals → continue the batch.** The weekly report
 always completes. See [`docs/adr/0003`](docs/adr/0003-graceful-degradation.md).
 
+**No silent failures.** When any summary falls back, the run posts an alert to a
+**separate `#integration-failures` Slack channel** (via `SLACK_ALERT_WEBHOOK_URL`)
+naming the affected accounts — so a degraded briefing is noticed and investigated,
+not buried. Slack delivery itself is verified via the webhook's synchronous `ok`
+response.
+
 ## Example briefing (Slack)
 
 ![Weekly churn risk briefing posted to the Customer Success channel](docs/screenshots/slack-message.png)
