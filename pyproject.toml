@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "recurly-churn-risk"
 version = "0.1.0"
@@ -16,12 +20,16 @@ dev = [
     "pyright>=1.1.380",
 ]
 
+[tool.setuptools.packages.find]
+include = ["src*"]
+
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+pythonpath = ["."]
 
 [tool.pyright]
 include = ["src", "app", "tests"]
