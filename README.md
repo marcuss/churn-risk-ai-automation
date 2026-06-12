@@ -174,6 +174,7 @@ let the model decide risk would force the eval to check correctness too, which i
 far harder and noisier. That split keeps the summary-quality eval small and
 trustworthy: deterministic output checks plus an LLM-as-judge rubric at
 temperature 0, gated separately in CI (`evals.yml`) because judge calls cost money.
+See [`docs/adr/0007`](docs/adr/0007-evaluating-llm-output.md).
 
 ## What I'd change for production
 
@@ -197,5 +198,5 @@ temperature 0, gated separately in CI (`evals.yml`) because judge calls cost mon
 - [`docs/system_card.md`](docs/system_card.md) — intended use, data handling, failure modes
 - [`docs/sample_output.md`](docs/sample_output.md) — expected briefing format + examples
 - [`evals/rubric.md`](evals/rubric.md) — summary-quality spec (checks + judge rubric)
-- [`docs/adr/`](docs/adr/) — architecture decision records (0001–0005)
+- [`docs/adr/`](docs/adr/) — architecture decision records (0001–0007)
 - [`CLAUDE.md`](CLAUDE.md) — spec-driven rule, conventions & module boundaries

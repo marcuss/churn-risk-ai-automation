@@ -1,7 +1,8 @@
 # Eval Rubric — Churn Summary Quality
 
 The spec for what a "good" summary is. The harness (`evals/run.py`) executes this;
-the rubric is the source of truth, not the code.
+the rubric is the source of truth, not the code. The decision and tradeoffs behind
+this approach are in [ADR 0007](../docs/adr/0007-evaluating-llm-output.md).
 
 ## What this grades — and why it can stay small
 
