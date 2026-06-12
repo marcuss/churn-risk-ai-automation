@@ -1,0 +1,1 @@
+Elevated churn risk for {account_name} driven by {signal_summary}. Recommend Customer Success review ahead of the upcoming renewal.

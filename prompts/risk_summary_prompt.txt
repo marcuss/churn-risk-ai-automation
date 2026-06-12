@@ -1,0 +1,13 @@
+Generate a churn-risk assessment for the following account.
+
+Account: {account_name}
+Subscription Status: {status_description}
+Failed Payments (last 30d): {failed_payment_count}
+Days Since Last Login: {days_since_last_login}
+Open Support Tickets: {open_support_tickets}
+Renewal: {renewal_phrase}
+
+Detected Risk Signals:
+{signal_lines}
+
+Write a concise 2–3 sentence churn-risk summary for Customer Success.
